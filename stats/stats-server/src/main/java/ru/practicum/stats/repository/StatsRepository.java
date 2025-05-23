@@ -27,7 +27,7 @@ public interface StatsRepository extends JpaRepository<EndpointHit, Long> {
             "from EndpointHit eh \n" +
             "where eh.timestamp between :start and :end\n" +
             "and eh.uri in :uris\n" +
-            "group by eh.app, eh.uri" +
+            "group by eh.app, eh.uri " +
             "order by COUNT(eh) DESC")
     List<EndpointStatsResponse> findAllStatsWithUris(LocalDateTime start, LocalDateTime end, List<String> uris);
 
@@ -35,7 +35,7 @@ public interface StatsRepository extends JpaRepository<EndpointHit, Long> {
             "from EndpointHit eh \n" +
             "where eh.timestamp between :start and :end\n" +
             "and eh.uri in :uris\n" +
-            "group by eh.app, eh.uri" +
-            "group by COUNT(DISTINCT eh.ip) DESC")
+            "group by eh.app, eh.uri " +
+            "order by COUNT(DISTINCT eh.ip) DESC")
     List<EndpointStatsResponse> findAllUniqueStatsWithUris(LocalDateTime start, LocalDateTime end, List<String> uris);
 }
