@@ -1,13 +1,13 @@
 server:
-  port: 9090
+  port: 8080
 
 spring:
   sql.init.mode: always
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://stats-db:5432/stats
-    username: stats
-    password: stats
+    url: jdbc:postgresql://ewm-db:5432/ewm
+    username: ewm
+    password: ewm
   jpa:
     properties:
       show_sql: true
