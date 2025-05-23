@@ -1,9 +1,9 @@
 package ru.practicum.stats;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -11,8 +11,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EndpointHitRequest {
+    @NotBlank
     String app;
+    @NotBlank
     String uri;
+    @NotBlank
     String ip;
-    LocalDateTime timestamp;
+    @NotNull
+    String timestamp;
 }

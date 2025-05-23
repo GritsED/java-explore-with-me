@@ -1,0 +1,27 @@
+server:
+  port: 9090
+
+spring:
+  sql.init.mode: always
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://stats-db:5432/stats
+    username: stats
+    password: stats
+  jpa:
+    properties:
+      show_sql: true
+#      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    root: INFO
+    ru.practicum: DEBUG
+    org:
+      type.descriptor.sql.BasicBinder: INFO
+      springframework:
+        orm:
+          jpa: INFO
+          jpa.JpaTransactionManager: INFO
+        transaction: INFO
+        transaction.interceptor: INFO
