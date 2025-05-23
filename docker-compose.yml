@@ -1,13 +1,4 @@
 services:
-  stats-server:
-    build: stats/stats-server
-    image: stats-server
-    container_name: stats-server
-    ports:
-      - "9090:9090"
-    depends_on:
-      - stats-db
-
   stats-db:
     image: postgres:16.1
     container_name: stats-db
@@ -23,14 +14,14 @@ services:
       interval: 5s
       retries: 10
 
-  ewm-service:
-    build: ewm-service
-    image: ewm-server
-    container_name: ewm-server
+  stats-server:
+    build: stats/stats-server
+    image: stats-server
+    container_name: stats-server
     ports:
-      - "8080:8080"
+      - "9090:9090"
     depends_on:
-      - ewm-db
+      - stats-db
 
   ewm-db:
     image: postgres:16.1
@@ -46,3 +37,12 @@ services:
       timeout: 5s
       interval: 5s
       retries: 10
+
+  ewm-service:
+    build: ewm-service
+    image: ewm-server
+    container_name: ewm-server
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ewm-db
