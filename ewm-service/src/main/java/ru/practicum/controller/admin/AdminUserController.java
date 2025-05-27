@@ -1,18 +1,21 @@
 package ru.practicum.controller.admin;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.request.NewUserRequest;
 import ru.practicum.dto.response.UserDto;
-import ru.practicum.service.UserService;
+import ru.practicum.service.interfaces.UserService;
 
 import java.util.List;
 
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
@@ -29,7 +32,7 @@ public class AdminUserController {
 
     @PostMapping
     @ResponseStatus(value = HttpStatus.CREATED)
-    public UserDto addUser(@RequestBody NewUserRequest newUserRequest) {
+    public UserDto addUser(@RequestBody @Valid NewUserRequest newUserRequest) {
         log.info("POST /admin/users — add user: {}", newUserRequest);
         return userService.addUser(newUserRequest);
     }

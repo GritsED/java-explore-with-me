@@ -1,4 +1,4 @@
-package ru.practicum.service;
+package ru.practicum.service.impl;
 
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -12,6 +12,7 @@ import ru.practicum.exception.NotFoundException;
 import ru.practicum.mapper.user.UserMapper;
 import ru.practicum.model.User;
 import ru.practicum.repository.UserRepository;
+import ru.practicum.service.interfaces.UserService;
 
 import java.util.List;
 

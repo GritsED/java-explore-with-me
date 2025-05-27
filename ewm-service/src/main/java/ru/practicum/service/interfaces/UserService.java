@@ -1,4 +1,4 @@
-package ru.practicum.service;
+package ru.practicum.service.interfaces;
 
 import ru.practicum.dto.request.NewUserRequest;
 import ru.practicum.dto.response.UserDto;

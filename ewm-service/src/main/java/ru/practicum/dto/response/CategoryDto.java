@@ -1,18 +1,17 @@
-package ru.practicum.dto.request;
+package ru.practicum.dto.response;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class NewUserRequest {
-    @NotBlank
-    @Email
-    String email;
+public class CategoryDto {
+    Long id;
     @NotBlank
     String name;
 }
