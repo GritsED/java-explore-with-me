@@ -3,10 +3,16 @@ package ru.practicum.service.interfaces;
 import ru.practicum.dto.request.NewCategoryDto;
 import ru.practicum.dto.response.CategoryDto;
 
+import java.util.List;
+
 public interface CategoryService {
-    CategoryDto addCategory(NewCategoryDto newCategory);
+    CategoryDto addCategoryAdmin(NewCategoryDto newCategory);
 
-    void deleteCategory(Long id);
+    void deleteCategoryAdmin(Long id);
 
-    CategoryDto updateCategory(CategoryDto categoryDto, Long id);
+    CategoryDto updateCategoryAdmin(CategoryDto categoryDto, Long id);
+
+    List<CategoryDto> getAllCategoriesPublic(Integer from, Integer size);
+
+    CategoryDto getCategoryByIdPublic(Long id);
 }

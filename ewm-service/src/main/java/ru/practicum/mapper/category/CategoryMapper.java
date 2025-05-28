@@ -6,6 +6,8 @@ import ru.practicum.dto.request.NewCategoryDto;
 import ru.practicum.dto.response.CategoryDto;
 import ru.practicum.model.Category;
 
+import java.util.List;
+
 @Mapper
 public interface CategoryMapper {
 
@@ -13,4 +15,6 @@ public interface CategoryMapper {
     Category toEntity(NewCategoryDto newCategory);
 
     CategoryDto toDto(Category category);
+
+    List<CategoryDto> mapToCategoryDto(Iterable<Category> categories);
 }

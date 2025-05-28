@@ -2,6 +2,8 @@ package ru.practicum.service.impl;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.request.NewCategoryDto;
@@ -13,6 +15,8 @@ import ru.practicum.model.Category;
 import ru.practicum.repository.CategoryRepository;
 import ru.practicum.service.interfaces.CategoryService;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -22,7 +26,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public CategoryDto addCategory(NewCategoryDto newCategory) {
+    public CategoryDto addCategoryAdmin(NewCategoryDto newCategory) {
         String catName = newCategory.getName();
         checkExistCategoryByName(catName);
 
@@ -33,25 +37,40 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public void deleteCategory(Long id) {
+    public void deleteCategoryAdmin(Long id) {
         /**
          * Тут нужно добавить проверку, что с категорией не связано ни одно событие
          * И выбросить исключение Конфликт 409
          */
-        Category category = findCategoryById(id);
+        Category category = findCategoryByIdOrThrow(id);
         categoryRepository.delete(category);
     }
 
     @Override
     @Transactional
-    public CategoryDto updateCategory(CategoryDto categoryDto, Long id) {
-        Category category = findCategoryById(id);
+    public CategoryDto updateCategoryAdmin(CategoryDto categoryDto, Long id) {
+        Category category = findCategoryByIdOrThrow(id);
         String newName = categoryDto.getName();
         if (!category.getName().equals(newName)) {
             checkExistCategoryByName(newName);
             category.setName(newName);
             categoryRepository.save(category);
         }
+        return categoryMapper.toDto(category);
+    }
+
+    @Override
+    public List<CategoryDto> getAllCategoriesPublic(Integer from, Integer size) {
+        Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size);
+
+        List<Category> categories = categoryRepository.findAll(pageable).getContent();
+
+        return categoryMapper.mapToCategoryDto(categories);
+    }
+
+    @Override
+    public CategoryDto getCategoryByIdPublic(Long id) {
+        Category category = findCategoryByIdOrThrow(id);
         return categoryMapper.toDto(category);
     }
 
@@ -62,7 +81,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
     }
 
-    private Category findCategoryById(Long id) {
+    private Category findCategoryByIdOrThrow(Long id) {
         return categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found"));
     }
