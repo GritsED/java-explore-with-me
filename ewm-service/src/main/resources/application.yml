@@ -3,7 +3,9 @@ server:
 
 spring:
   sql:
-    init.mode: always
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
   datasource:
     driverClassName: org.postgresql.Driver
     url: jdbc:postgresql://ewm-db:5432/ewm
@@ -11,10 +13,12 @@ spring:
     password: ewm
   jpa:
     show_sql: true
+    hibernate:
+      ddl-auto: none
 
 logging:
   level:
-    root: INFO
+    root: DEBUG
     ru.practicum: DEBUG
     org:
       type.descriptor.sql.BasicBinder: INFO

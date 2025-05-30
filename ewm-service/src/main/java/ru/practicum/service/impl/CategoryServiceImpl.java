@@ -10,9 +10,10 @@ import ru.practicum.dto.request.NewCategoryDto;
 import ru.practicum.dto.response.CategoryDto;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.mapper.category.CategoryMapper;
+import ru.practicum.mapper.CategoryMapper;
 import ru.practicum.model.Category;
 import ru.practicum.repository.CategoryRepository;
+import ru.practicum.repository.EventRepository;
 import ru.practicum.service.interfaces.CategoryService;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.List;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
+    private final EventRepository eventRepository;
 
     @Override
     @Transactional
@@ -38,10 +40,10 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public void deleteCategoryAdmin(Long id) {
-        /**
-         * Тут нужно добавить проверку, что с категорией не связано ни одно событие
-         * И выбросить исключение Конфликт 409
-         */
+        if (eventRepository.existsByCategoryId(id)) {
+            throw new ConflictException("Can't delete a category that is in use.");
+        }
+
         Category category = findCategoryByIdOrThrow(id);
         categoryRepository.delete(category);
     }

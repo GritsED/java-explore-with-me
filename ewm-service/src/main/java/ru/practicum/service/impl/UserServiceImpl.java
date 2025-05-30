@@ -9,7 +9,7 @@ import ru.practicum.dto.request.NewUserRequest;
 import ru.practicum.dto.response.UserDto;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.mapper.user.UserMapper;
+import ru.practicum.mapper.UserMapper;
 import ru.practicum.model.User;
 import ru.practicum.repository.UserRepository;
 import ru.practicum.service.interfaces.UserService;
