@@ -1,8 +1,11 @@
 package ru.practicum.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,7 @@ import ru.practicum.model.Category;
 import ru.practicum.model.Event;
 import ru.practicum.model.Location;
 import ru.practicum.model.User;
+import ru.practicum.model.enums.SortOpt;
 import ru.practicum.model.enums.State;
 import ru.practicum.model.enums.StateAction;
 import ru.practicum.repository.CategoryRepository;
@@ -27,6 +31,9 @@ import ru.practicum.repository.LocationRepository;
 import ru.practicum.repository.UserRepository;
 import ru.practicum.repository.specification.EventSpecification;
 import ru.practicum.service.interfaces.EventService;
+import ru.practicum.stats.EndpointHitRequest;
+import ru.practicum.stats.EndpointStatsResponse;
+import ru.practicum.stats.StatsClient;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -41,9 +48,9 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final LocationRepository locationRepository;
+    private final StatsClient statsClient;
 
     private final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
 
     @Override
     public List<EventShortDto> getUserEventsPrivate(Long userId, Integer from, Integer size) {
@@ -69,7 +76,7 @@ public class EventServiceImpl implements EventService {
         event.setConfirmedRequests(0);
         event.setCreatedOn(LocalDateTime.now());
         event.setLocation(location);
-        event.setViews(0);
+        event.setViews(0L);
         event.setState(State.PENDING);
         Event save = eventRepository.save(event);
 
@@ -166,6 +173,66 @@ public class EventServiceImpl implements EventService {
         eventMapper.updateEventAdmin(event, dto, category);
         eventRepository.save(event);
         return eventMapper.mapToFullDto(event);
+    }
+
+    @Override
+    public List<EventShortDto> getEventsPublic(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
+                                               LocalDateTime rangeEnd, Boolean onlyAvailable, String sort, Integer from,
+                                               Integer size, HttpServletRequest httpServletRequest) {
+
+        if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
+            throw new ValidationException("Range start can't be after range end.");
+        }
+
+        Specification<Event> specification = EventSpecification
+                .publicFilterBuild(text, categories, paid, rangeStart, rangeEnd, onlyAvailable);
+
+        Sort sorting = sorting(sort);
+
+        hit(httpServletRequest);
+
+        Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size, sorting);
+        List<Event> events = eventRepository.findAll(specification, pageable).getContent();
+
+        return events.stream()
+                .map(eventMapper::mapToShortDto)
+                .toList();
+    }
+
+    @Override
+    public EventFullDto getEventByIdPublic(Long eventId, HttpServletRequest httpServletRequest) {
+        Event event = eventRepository.findById(eventId).filter(e -> e.getState().equals(State.PUBLISHED))
+                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found."));
+
+        hit(httpServletRequest);
+
+        List<EndpointStatsResponse> stats = statsClient.findStats(event.getPublishedOn(), LocalDateTime.now(),
+                List.of("/events/" + eventId), true);
+
+        Long views = stats.isEmpty() ? 0L : stats.getFirst().getHits();
+        event.setViews(views);
+
+        return eventMapper.mapToFullDto(event);
+    }
+
+    private void hit(HttpServletRequest httpServletRequest) {
+        EndpointHitRequest endpointHitRequest = new EndpointHitRequest(
+                "main-server",
+                httpServletRequest.getRequestURI(),
+                httpServletRequest.getRemoteAddr(),
+                LocalDateTime.now().toString());
+        statsClient.hit(endpointHitRequest);
+    }
+
+    private Sort sorting(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.unsorted();
+        }
+        SortOpt eventSortOpt = SortOpt.valueOf(sort.toUpperCase());
+        return switch (eventSortOpt) {
+            case EVENT_DATE -> Sort.by(Sort.Direction.DESC, "eventDate");
+            case VIEWS -> Sort.by(Sort.Direction.DESC, "views");
+        };
     }
 
     private void checkEventDate(String date) {
