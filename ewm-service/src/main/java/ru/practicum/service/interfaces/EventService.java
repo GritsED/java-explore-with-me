@@ -1,10 +1,9 @@
 package ru.practicum.service.interfaces;
 
 import jakarta.servlet.http.HttpServletRequest;
-import ru.practicum.dto.request.NewEventDto;
-import ru.practicum.dto.request.UpdateEventAdminRequest;
-import ru.practicum.dto.request.UpdateEventUserRequest;
+import ru.practicum.dto.request.*;
 import ru.practicum.dto.response.EventFullDto;
+import ru.practicum.dto.response.EventRequestStatusUpdateResult;
 import ru.practicum.dto.response.EventShortDto;
 
 import java.time.LocalDateTime;
@@ -19,8 +18,13 @@ public interface EventService {
 
     EventFullDto updateEventPrivate(Long userId, Long eventId, UpdateEventUserRequest dto);
 
+    List<ParticipationRequestDto> getUserEventRequestsPrivate(Long userId, Long eventId);
+
+    EventRequestStatusUpdateResult updateEventRequestsPrivate(Long userId, Long eventId,
+                                                              EventRequestStatusUpdateRequest dto);
+
     List<EventFullDto> getEventsAdmin(List<Long> users, List<String> states, List<Long> categories,
-                                      String rangeStart, String rangeEnd, Integer from, Integer size);
+                                      LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size);
 
     EventFullDto updateEventAdmin(Long eventId, UpdateEventAdminRequest dto);
 

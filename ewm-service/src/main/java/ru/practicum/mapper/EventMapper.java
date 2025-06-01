@@ -23,6 +23,7 @@ public interface EventMapper {
     Event mapToEvent(NewEventDto newEventDto, User user, Category category);
 
     @Mapping(source = "event.initiator", target = "initiator")
+    @Mapping(source = "eventDate", target = "eventDate", dateFormat = "yyyy-MM-dd HH:mm:ss")
     EventShortDto mapToShortDto(Event event);
 
     @Mapping(source = "eventDate", target = "eventDate", dateFormat = "yyyy-MM-dd HH:mm:ss")
@@ -37,6 +38,7 @@ public interface EventMapper {
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "category", source = "category")
+    @Mapping(source = "newEventDto.eventDate", target = "eventDate", dateFormat = "yyyy-MM-dd HH:mm:ss")
     void updateEventAdmin(@MappingTarget Event event, UpdateEventAdminRequest newEventDto, Category category);
 
 }

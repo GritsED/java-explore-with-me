@@ -1,34 +1,29 @@
 package ru.practicum.service.impl;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.dto.request.NewEventDto;
-import ru.practicum.dto.request.UpdateEventAdminRequest;
-import ru.practicum.dto.request.UpdateEventUserRequest;
+import ru.practicum.dto.request.*;
 import ru.practicum.dto.response.EventFullDto;
+import ru.practicum.dto.response.EventRequestStatusUpdateResult;
 import ru.practicum.dto.response.EventShortDto;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
 import ru.practicum.mapper.EventMapper;
-import ru.practicum.model.Category;
-import ru.practicum.model.Event;
-import ru.practicum.model.Location;
-import ru.practicum.model.User;
+import ru.practicum.mapper.RequestMapper;
+import ru.practicum.model.*;
+import ru.practicum.model.enums.RequestStatus;
 import ru.practicum.model.enums.SortOpt;
 import ru.practicum.model.enums.State;
 import ru.practicum.model.enums.StateAction;
-import ru.practicum.repository.CategoryRepository;
-import ru.practicum.repository.EventRepository;
-import ru.practicum.repository.LocationRepository;
-import ru.practicum.repository.UserRepository;
+import ru.practicum.repository.*;
 import ru.practicum.repository.specification.EventSpecification;
 import ru.practicum.service.interfaces.EventService;
 import ru.practicum.stats.EndpointHitRequest;
@@ -41,7 +36,7 @@ import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
@@ -51,6 +46,8 @@ public class EventServiceImpl implements EventService {
     private final StatsClient statsClient;
 
     private final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final RequestRepository requestRepository;
+    private final RequestMapper requestMapper;
 
     @Override
     public List<EventShortDto> getUserEventsPrivate(Long userId, Integer from, Integer size) {
@@ -125,11 +122,78 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public List<ParticipationRequestDto> getUserEventRequestsPrivate(Long userId, Long eventId) {
+        User user = findUserOrThrow(userId);
+        Event event = findEventOrThrow(eventId);
+
+        if (!event.getInitiator().equals(user)) {
+            throw new ValidationException("User is not the initiator of the event.");
+        }
+
+        List<ParticipationRequest> requests = requestRepository.findAllByEventId(eventId);
+
+        return requests.stream().map(requestMapper::toDto).toList();
+    }
+
+    @Override
+    public EventRequestStatusUpdateResult updateEventRequestsPrivate(Long userId, Long eventId,
+                                                                     EventRequestStatusUpdateRequest dto) {
+        User user = findUserOrThrow(userId);
+        Event event = findEventOrThrow(eventId);
+
+
+        if (!event.getInitiator().equals(user)) {
+            throw new ValidationException("Only the event initiator can update requests.");
+        }
+
+        Integer confirmedRequests = event.getConfirmedRequests();
+        Integer limit = event.getParticipantLimit();
+        if (limit.equals(confirmedRequests)) {
+            throw new ConflictException("Participant limit exceeded.");
+        }
+
+        if (!event.getState().equals(State.PUBLISHED)) {
+            throw new ConflictException("Event is not published.");
+        }
+
+        List<ParticipationRequest> requests = requestRepository.findAllById(dto.getRequestIds());
+
+        for (ParticipationRequest participationRequest : requests) {
+            if (!participationRequest.getStatus().equals(RequestStatus.PENDING)) {
+                throw new ConflictException("Request status is not PENDING.");
+            }
+
+            if (confirmedRequests < limit && dto.getStatus().equals(RequestStatus.CONFIRMED)) {
+                participationRequest.setStatus(RequestStatus.CONFIRMED);
+                confirmedRequests++;
+                event.setConfirmedRequests(confirmedRequests);
+            } else {
+                participationRequest.setStatus(RequestStatus.REJECTED);
+            }
+        }
+        eventRepository.save(event);
+        requestRepository.saveAll(requests);
+
+        List<ParticipationRequestDto> confirmed = requests.stream()
+                .filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED))
+                .map(requestMapper::toDto)
+                .toList();
+        List<ParticipationRequestDto> rejected = requests.stream()
+                .filter(request -> request.getStatus().equals(RequestStatus.REJECTED))
+                .map(requestMapper::toDto)
+                .toList();
+
+        return EventRequestStatusUpdateResult.builder()
+                .confirmedRequests(confirmed)
+                .rejectedRequests(rejected).build();
+    }
+
+    @Override
     public List<EventFullDto> getEventsAdmin(List<Long> users,
                                              List<String> states,
                                              List<Long> categories,
-                                             String rangeStart,
-                                             String rangeEnd,
+                                             LocalDateTime rangeStart,
+                                             LocalDateTime rangeEnd,
                                              Integer from,
                                              Integer size) {
         Specification<Event> specification = EventSpecification
@@ -172,6 +236,7 @@ public class EventServiceImpl implements EventService {
 
         eventMapper.updateEventAdmin(event, dto, category);
         eventRepository.save(event);
+        locationRepository.save(event.getLocation());
         return eventMapper.mapToFullDto(event);
     }
 
@@ -236,7 +301,8 @@ public class EventServiceImpl implements EventService {
     }
 
     private void checkEventDate(String date) {
-        if (LocalDateTime.parse(date, FORMATTER)
+        String string = date.replace('T', ' ');
+        if (LocalDateTime.parse(string, FORMATTER)
                 .isBefore(LocalDateTime.now().plusHours(2))) {
             throw new ValidationException("The event date and time must be at least two hours in the future.");
         }

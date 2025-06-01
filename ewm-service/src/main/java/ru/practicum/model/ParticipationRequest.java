@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.format.annotation.DateTimeFormat;
 import ru.practicum.model.enums.RequestStatus;
 
 import java.time.LocalDateTime;
@@ -33,5 +34,6 @@ public class ParticipationRequest {
     RequestStatus status;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime created;
 }

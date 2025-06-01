@@ -13,8 +13,8 @@ public class EventSpecification {
     public static Specification<Event> adminFilterBuild(List<Long> users,
                                                         List<String> states,
                                                         List<Long> categories,
-                                                        String rangeStart,
-                                                        String rangeEnd) {
+                                                        LocalDateTime rangeStart,
+                                                        LocalDateTime rangeEnd) {
         return ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -30,11 +30,11 @@ public class EventSpecification {
                 predicates.add(root.get("category").get("id").in(categories));
             }
 
-            if (rangeStart != null && !rangeStart.isEmpty()) {
+            if (rangeStart != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("eventDate"), rangeStart));
             }
 
-            if (rangeEnd != null && !rangeEnd.isEmpty()) {
+            if (rangeEnd != null) {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("eventDate"), rangeEnd));
             }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
