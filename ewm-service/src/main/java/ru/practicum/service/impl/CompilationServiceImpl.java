@@ -1,6 +1,8 @@
 package ru.practicum.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.request.NewCompilationDto;
@@ -59,6 +61,22 @@ public class CompilationServiceImpl implements CompilationService {
         compilationMapper.updateCompilationAdmin(compilation, updateCompilationRequest, list);
 
         return compilationMapper.toDto(compilation);
+    }
+
+    @Override
+    public List<CompilationDto> getCompilationsPublic(Boolean pinned, Integer from, Integer size) {
+        Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size);
+
+        List<Compilation> compilations = compilationRepository.findAllByPinned(pinned, pageable).getContent();
+
+        return compilations.stream()
+                .map(compilationMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    public CompilationDto getCompilationPublic(Long compId) {
+        return compilationMapper.toDto(getCompOrThrow(compId));
     }
 
     private Compilation getCompOrThrow(Long id) {

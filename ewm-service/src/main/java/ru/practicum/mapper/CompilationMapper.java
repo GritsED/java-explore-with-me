@@ -12,6 +12,7 @@ import java.util.List;
 @Mapper(uses = {EventMapper.class, UserMapper.class})
 public interface CompilationMapper {
     @Mapping(source = "events", target = "events")
+    @Mapping(target = "pinned", source = "compilationDto.pinned", defaultValue = "false")
     Compilation toEntity(NewCompilationDto compilationDto, List<EventShortDto> events);
 
     CompilationDto toDto(Compilation compilation);

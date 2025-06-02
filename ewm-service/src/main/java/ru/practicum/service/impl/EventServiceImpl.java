@@ -1,7 +1,6 @@
 package ru.practicum.service.impl;
 
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -136,6 +135,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional
     public EventRequestStatusUpdateResult updateEventRequestsPrivate(Long userId, Long eventId,
                                                                      EventRequestStatusUpdateRequest dto) {
         User user = findUserOrThrow(userId);
@@ -148,7 +148,7 @@ public class EventServiceImpl implements EventService {
 
         Integer confirmedRequests = event.getConfirmedRequests();
         Integer limit = event.getParticipantLimit();
-        if (limit.equals(confirmedRequests)) {
+        if (dto.getStatus().equals(RequestStatus.CONFIRMED) && limit <= confirmedRequests) {
             throw new ConflictException("Participant limit exceeded.");
         }
 
@@ -165,20 +165,19 @@ public class EventServiceImpl implements EventService {
 
             if (confirmedRequests < limit && dto.getStatus().equals(RequestStatus.CONFIRMED)) {
                 participationRequest.setStatus(RequestStatus.CONFIRMED);
-                confirmedRequests++;
-                event.setConfirmedRequests(confirmedRequests);
+                event.setConfirmedRequests(event.getConfirmedRequests() + 1);
             } else {
                 participationRequest.setStatus(RequestStatus.REJECTED);
             }
         }
         eventRepository.save(event);
-        requestRepository.saveAll(requests);
+        List<ParticipationRequest> participationRequests = requestRepository.saveAll(requests);
 
-        List<ParticipationRequestDto> confirmed = requests.stream()
+        List<ParticipationRequestDto> confirmed = participationRequests.stream()
                 .filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED))
                 .map(requestMapper::toDto)
                 .toList();
-        List<ParticipationRequestDto> rejected = requests.stream()
+        List<ParticipationRequestDto> rejected = participationRequests.stream()
                 .filter(request -> request.getStatus().equals(RequestStatus.REJECTED))
                 .map(requestMapper::toDto)
                 .toList();
@@ -232,11 +231,12 @@ public class EventServiceImpl implements EventService {
 
         if (dto.getCategory() != null) {
             category = findCategoryOrThrow(dto.getCategory());
+            event.setCategory(category);
         }
 
-        eventMapper.updateEventAdmin(event, dto, category);
-        eventRepository.save(event);
+        eventMapper.updateEventAdmin(event, dto);
         locationRepository.save(event.getLocation());
+        eventRepository.save(event);
         return eventMapper.mapToFullDto(event);
     }
 
@@ -285,7 +285,7 @@ public class EventServiceImpl implements EventService {
                 "main-server",
                 httpServletRequest.getRequestURI(),
                 httpServletRequest.getRemoteAddr(),
-                LocalDateTime.now().toString());
+                LocalDateTime.now());
         statsClient.hit(endpointHitRequest);
     }
 

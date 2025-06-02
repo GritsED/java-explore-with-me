@@ -8,8 +8,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import ru.practicum.model.Location;
 import ru.practicum.model.enums.State;
 
-import java.time.LocalDateTime;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

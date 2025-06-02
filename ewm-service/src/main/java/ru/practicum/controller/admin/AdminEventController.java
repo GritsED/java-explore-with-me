@@ -1,7 +1,9 @@
 package ru.practicum.controller.admin;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.request.UpdateEventAdminRequest;
 import ru.practicum.dto.response.EventFullDto;
@@ -10,6 +12,7 @@ import ru.practicum.service.interfaces.EventService;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/admin/events")
 @RequiredArgsConstructor
@@ -33,7 +36,7 @@ public class AdminEventController {
 
     @PatchMapping("{eventId}")
     public EventFullDto updateEvent(@PathVariable Long eventId,
-                                    @RequestBody UpdateEventAdminRequest eventAdminRequest) {
+                                    @RequestBody @Valid UpdateEventAdminRequest eventAdminRequest) {
         return eventService.updateEventAdmin(eventId, eventAdminRequest);
     }
 }

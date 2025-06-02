@@ -1,6 +1,9 @@
 server:
   port: 8080
 
+stats-server:
+  url: http://stats-server:9090
+
 spring:
   sql:
     init:
@@ -18,7 +21,7 @@ spring:
 
 logging:
   level:
-    root: DEBUG
+    root: INFO
     ru.practicum: DEBUG
     org:
       type.descriptor.sql.BasicBinder: INFO

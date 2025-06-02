@@ -1,10 +1,8 @@
 package ru.practicum.controller.publ;
 
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.response.CategoryDto;
 import ru.practicum.service.interfaces.CategoryService;
 
@@ -12,8 +10,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/categories")
+@RequiredArgsConstructor
 public class PublicCategoryController {
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
 
     @GetMapping("/{catId}")
     public CategoryDto getCategory(@PathVariable Long catId) {
@@ -21,7 +20,8 @@ public class PublicCategoryController {
     }
 
     @GetMapping
-    public List<CategoryDto> getCategories(Integer from, Integer size) {
+    public List<CategoryDto> getCategories(@RequestParam(defaultValue = "0") Integer from,
+                                           @RequestParam(defaultValue = "10") Integer size) {
         return categoryService.getAllCategoriesPublic(from, size);
     }
 }

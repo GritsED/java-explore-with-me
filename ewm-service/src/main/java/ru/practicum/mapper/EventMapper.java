@@ -20,6 +20,9 @@ public interface EventMapper {
     @Mapping(source = "newEventDto.eventDate", target = "eventDate", dateFormat = "yyyy-MM-dd HH:mm:ss")
     @Mapping(source = "user", target = "initiator")
     @Mapping(source = "category", target = "category")
+    @Mapping(target = "paid", source = "newEventDto.paid", defaultValue = "false")
+    @Mapping(target = "participantLimit", source = "newEventDto.participantLimit", defaultValue = "0")
+    @Mapping(target = "requestModeration", source = "newEventDto.requestModeration", defaultValue = "true")
     Event mapToEvent(NewEventDto newEventDto, User user, Category category);
 
     @Mapping(source = "event.initiator", target = "initiator")
@@ -37,8 +40,8 @@ public interface EventMapper {
     void updateEvent(@MappingTarget Event event, UpdateEventUserRequest newEventDto, Category category);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "category", source = "category")
+    @Mapping(target = "category", ignore = true)
     @Mapping(source = "newEventDto.eventDate", target = "eventDate", dateFormat = "yyyy-MM-dd HH:mm:ss")
-    void updateEventAdmin(@MappingTarget Event event, UpdateEventAdminRequest newEventDto, Category category);
+    void updateEventAdmin(@MappingTarget Event event, UpdateEventAdminRequest newEventDto);
 
 }
