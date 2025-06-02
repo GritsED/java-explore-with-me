@@ -1,7 +1,6 @@
 package ru.practicum.exception;
 
 import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -24,7 +23,7 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiError handleConflict(final ConstraintViolationException e) {
+    public ApiError handleConstraintViolation(final ConstraintViolationException e) {
         return new ApiError(e.getMessage(), "For the requested operation the conditions are not met.",
                 HttpStatus.CONFLICT.name(), LocalDateTime.now());
     }
@@ -37,10 +36,10 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler(ValidationException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiError handleConflict(final ValidationException e) {
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleValidation(final ValidationException e) {
         return new ApiError(e.getMessage(), "For the requested operation the conditions are not met.",
-                HttpStatus.FORBIDDEN.name(), LocalDateTime.now());
+                "BAD_REQUEST", LocalDateTime.now());
     }
 
     @ExceptionHandler(NumberFormatException.class)

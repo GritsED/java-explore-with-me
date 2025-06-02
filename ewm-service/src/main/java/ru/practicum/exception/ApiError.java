@@ -1,18 +1,14 @@
 package ru.practicum.exception;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
-@AllArgsConstructor
 @NoArgsConstructor
 public class ApiError {
-    List<String> errors;
     String message;
     String reason;
     String status;
