@@ -1,11 +1,9 @@
 package ru.practicum.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import ru.practicum.model.Location;
 import ru.practicum.model.enums.StateAction;
 
@@ -18,8 +16,6 @@ public class UpdateEventAdminRequest {
     Long category;
     @Size(min = 20, max = 7000)
     String description;
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     String eventDate;
     Location location;
     Boolean paid;

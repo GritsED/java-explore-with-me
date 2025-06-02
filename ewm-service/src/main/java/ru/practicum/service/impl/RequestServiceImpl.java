@@ -2,6 +2,7 @@ package ru.practicum.service.impl;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @Service
 @AllArgsConstructor
+@Transactional(readOnly = true)
 public class RequestServiceImpl implements RequestService {
     private final RequestRepository requestRepository;
     private final RequestMapper requestMapper;
@@ -29,7 +31,7 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public List<ParticipationRequestDto> getRequestsPrivate(Long userId) {
-        User user = getUserOrThrow(userId);
+        getUserOrThrow(userId);
 
         List<ParticipationRequest> allByRequesterId = requestRepository.findAllByRequesterId(userId);
 
@@ -37,6 +39,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto addRequestPrivate(Long userId, Long eventId) {
         User requester = getUserOrThrow(userId);
         Event event = getEventOrThrow(eventId);
@@ -75,10 +78,11 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto cancelUserRequestPrivate(Long userId, Long requestId) {
         User requester = getUserOrThrow(userId);
         ParticipationRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Request not found."));
+                .orElseThrow(() -> new NotFoundException(ParticipationRequest.class, requestId));
 
 
         if (!request.getRequester().equals(requester)) {
@@ -98,10 +102,11 @@ public class RequestServiceImpl implements RequestService {
 
     private Event getEventOrThrow(Long eventId) {
         return eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
+                .orElseThrow(() -> new NotFoundException(Event.class, eventId));
     }
 
     private User getUserOrThrow(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(User.class, userId));
     }
 }

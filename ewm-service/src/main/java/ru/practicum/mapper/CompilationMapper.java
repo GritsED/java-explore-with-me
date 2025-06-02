@@ -9,7 +9,7 @@ import ru.practicum.model.Compilation;
 
 import java.util.List;
 
-@Mapper(uses = {EventMapper.class, UserMapper.class})
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {EventMapper.class, UserMapper.class})
 public interface CompilationMapper {
     @Mapping(source = "events", target = "events")
     @Mapping(target = "pinned", source = "compilationDto.pinned", defaultValue = "false")

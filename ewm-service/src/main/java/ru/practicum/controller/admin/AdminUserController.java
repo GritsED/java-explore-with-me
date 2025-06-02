@@ -23,6 +23,7 @@ public class AdminUserController {
     private final UserService userService;
 
     @GetMapping
+    @ResponseStatus(value = HttpStatus.OK)
     public List<UserDto> findUsers(@RequestParam(required = false) List<Long> ids,
                                    @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                                    @Positive @RequestParam(defaultValue = "10") Integer size) {

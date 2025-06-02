@@ -3,6 +3,7 @@ package ru.practicum.controller.admin;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.request.UpdateEventAdminRequest;
@@ -20,6 +21,7 @@ public class AdminEventController {
     private final EventService eventService;
 
     @GetMapping
+    @ResponseStatus(value = HttpStatus.OK)
     public List<EventFullDto> getEvents(@RequestParam(required = false) List<Long> users,
                                         @RequestParam(required = false) List<String> states,
                                         @RequestParam(required = false) List<Long> categories,
@@ -35,6 +37,7 @@ public class AdminEventController {
     }
 
     @PatchMapping("{eventId}")
+    @ResponseStatus(value = HttpStatus.OK)
     public EventFullDto updateEvent(@PathVariable Long eventId,
                                     @RequestBody @Valid UpdateEventAdminRequest eventAdminRequest) {
         return eventService.updateEventAdmin(eventId, eventAdminRequest);

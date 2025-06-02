@@ -82,7 +82,7 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventFullDto getEventByUserPrivate(Long userId, Long eventId) {
         Event event = eventRepository.findByInitiatorIdAndId(userId, eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found."));
+                .orElseThrow(() -> new NotFoundException(Event.class, eventId));
 
         return eventMapper.mapToFullDto(event);
     }
@@ -149,7 +149,7 @@ public class EventServiceImpl implements EventService {
         Integer confirmedRequests = event.getConfirmedRequests();
         Integer limit = event.getParticipantLimit();
         if (dto.getStatus().equals(RequestStatus.CONFIRMED) && limit <= confirmedRequests) {
-            throw new ConflictException("Participant limit exceeded.");
+            throw new ConflictException("The participant limit has been reached.");
         }
 
         if (!event.getState().equals(State.PUBLISHED)) {
@@ -160,7 +160,7 @@ public class EventServiceImpl implements EventService {
 
         for (ParticipationRequest participationRequest : requests) {
             if (!participationRequest.getStatus().equals(RequestStatus.PENDING)) {
-                throw new ConflictException("Request status is not PENDING.");
+                throw new ConflictException("Request must have status PENDING.");
             }
 
             if (confirmedRequests < limit && dto.getStatus().equals(RequestStatus.CONFIRMED)) {
@@ -210,7 +210,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventFullDto updateEventAdmin(Long eventId, UpdateEventAdminRequest dto) {
-        Category category = null;
+        Category category;
 
         if (dto.getEventDate() != null) {
             checkEventDate(dto.getEventDate());
@@ -225,7 +225,8 @@ public class EventServiceImpl implements EventService {
                     event.setPublishedOn(LocalDateTime.now());
                 }
                 case REJECT_EVENT -> event.setState(State.REJECTED);
-                default -> throw new ConflictException("Invalid state action for admin update.");
+                default -> throw new ValidationException("Cannot publish the event because " +
+                        "it's not in the right state: " + event.getState());
             }
         }
 
@@ -267,7 +268,7 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventFullDto getEventByIdPublic(Long eventId, HttpServletRequest httpServletRequest) {
         Event event = eventRepository.findById(eventId).filter(e -> e.getState().equals(State.PUBLISHED))
-                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found."));
+                .orElseThrow(() -> new NotFoundException(Event.class, eventId));
 
         hit(httpServletRequest);
 
@@ -310,17 +311,17 @@ public class EventServiceImpl implements EventService {
 
     private Category findCategoryOrThrow(Long catId) {
         return categoryRepository.findById(catId)
-                .orElseThrow(() -> new NotFoundException("Category with id " + catId + " not found."));
+                .orElseThrow(() -> new NotFoundException(Category.class, catId));
     }
 
     private User findUserOrThrow(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found."));
+                .orElseThrow(() -> new NotFoundException(User.class, userId));
     }
 
     private Event findEventOrThrow(Long eventId) {
         return eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found."));
+                .orElseThrow(() -> new NotFoundException(Event.class, eventId));
     }
 
     private void checkEventStatePrivate(State state) {

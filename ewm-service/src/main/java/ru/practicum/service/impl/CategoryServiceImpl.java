@@ -41,7 +41,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public void deleteCategoryAdmin(Long id) {
         if (eventRepository.existsByCategoryId(id)) {
-            throw new ConflictException("Can't delete a category that is in use.");
+            throw new ConflictException("The category is not empty");
         }
 
         Category category = findCategoryByIdOrThrow(id);
@@ -85,6 +85,6 @@ public class CategoryServiceImpl implements CategoryService {
 
     private Category findCategoryByIdOrThrow(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Category not found"));
+                .orElseThrow(() -> new NotFoundException(Category.class, id));
     }
 }

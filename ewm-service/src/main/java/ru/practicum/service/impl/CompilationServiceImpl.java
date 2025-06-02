@@ -22,7 +22,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class CompilationServiceImpl implements CompilationService {
     private final CompilationRepository compilationRepository;
     private final CompilationMapper compilationMapper;
@@ -30,6 +30,7 @@ public class CompilationServiceImpl implements CompilationService {
     private final EventMapper eventMapper;
 
     @Override
+    @Transactional
     public CompilationDto addCompilationAdmin(NewCompilationDto newCompilationDto) {
         List<Long> events = newCompilationDto.getEvents();
 
@@ -43,6 +44,7 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
+    @Transactional
     public void deleteCompilationAdmin(Long id) {
         Compilation compilation = getCompOrThrow(id);
 
@@ -50,6 +52,7 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
+    @Transactional
     public CompilationDto updateCompAdmin(Long id, UpdateCompilationRequest updateCompilationRequest) {
         Compilation compilation = getCompOrThrow(id);
 
@@ -80,6 +83,6 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     private Compilation getCompOrThrow(Long id) {
-        return compilationRepository.findById(id).orElseThrow(() -> new NotFoundException("Compilation not found"));
+        return compilationRepository.findById(id).orElseThrow(() -> new NotFoundException(Compilation.class, id));
     }
 }

@@ -12,7 +12,7 @@ import ru.practicum.model.User;
 
 import java.util.List;
 
-@Mapper(uses = {UserMapper.class, CategoryMapper.class})
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {UserMapper.class, CategoryMapper.class})
 public interface EventMapper {
     List<EventShortDto> mapToShortDto(Iterable<Event> events);
 

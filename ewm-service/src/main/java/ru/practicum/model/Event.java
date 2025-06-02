@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.format.annotation.DateTimeFormat;
 import ru.practicum.model.enums.State;
 
 import java.time.LocalDateTime;
@@ -24,12 +25,12 @@ public class Event {
     @Column(name = "confirmed_requests", nullable = false)
     Integer confirmedRequests;
     @Column(name = "created_on", nullable = false)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime createdOn;
     @Column(name = "description", nullable = false)
     String description;
     @Column(name = "event_date", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime eventDate;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
