@@ -271,6 +271,13 @@ public class EventServiceImpl implements EventService {
 
         hit(httpServletRequest);
 
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+
         List<EndpointStatsResponse> stats = statsClient.findStats(event.getPublishedOn(), LocalDateTime.now(),
                 List.of("/events/" + eventId), true);
 
