@@ -2,6 +2,7 @@ package ru.practicum.service.impl;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -49,16 +51,19 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> getUserEventsPrivate(Long userId, Integer from, Integer size) {
+        log.info("[getUserEventsPrivate] Request from userId={}, from={}, size={}", userId, from, size);
         Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size);
 
         List<Event> events = eventRepository.findAllByInitiatorId(userId, pageable);
 
+        log.info("[getUserEventsPrivate] Retrieved {} events for userId={}", events.size(), userId);
         return eventMapper.mapToShortDto(events);
     }
 
     @Override
     @Transactional
     public EventFullDto addNewEventPrivate(NewEventDto dto, Long userId) {
+        log.info("[addNewEventPrivate] User {} attempts to create a new event: {}", userId, dto.getTitle());
         checkEventDate(dto.getEventDate());
 
         Long catId = dto.getCategory();
@@ -75,11 +80,13 @@ public class EventServiceImpl implements EventService {
         event.setState(State.PENDING);
         Event save = eventRepository.save(event);
 
+        log.info("[addNewEventPrivate] Event with id {} successfully created by user {}", save.getId(), userId);
         return eventMapper.mapToFullDto(save);
     }
 
     @Override
     public EventFullDto getEventByUserPrivate(Long userId, Long eventId) {
+        log.info("[getEventByUserPrivate] User {} requests event with id {}", userId, eventId);
         Event event = eventRepository.findByInitiatorIdAndId(userId, eventId)
                 .orElseThrow(() -> new NotFoundException(Event.class, eventId));
 
@@ -89,7 +96,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventFullDto updateEventPrivate(Long userId, Long eventId, UpdateEventUserRequest updateDto) {
-        Category category = null;
+        log.info("[updateEventPrivate] User {} attempts to update event {} with data: {}", userId, eventId, updateDto);
 
         if (updateDto.getEventDate() != null) {
             checkEventDate(updateDto.getEventDate());
@@ -97,6 +104,7 @@ public class EventServiceImpl implements EventService {
         Event event = findEventOrThrow(eventId);
 
         if (!event.getInitiator().getId().equals(userId)) {
+            log.warn("[updateEventPrivate] User {} is not the initiator of event {}", userId, eventId);
             throw new ConflictException("User is not the initiator of the event.");
         }
 
@@ -104,31 +112,48 @@ public class EventServiceImpl implements EventService {
 
         if (updateDto.getStateAction() != null) {
             switch (updateDto.getStateAction()) {
-                case CANCEL_REVIEW -> event.setState(State.CANCELED);
-                case SEND_TO_REVIEW -> event.setState(State.PENDING);
-                default -> throw new ConflictException("Invalid state action for private update.");
+                case CANCEL_REVIEW -> {
+                    event.setState(State.CANCELED);
+                    log.info("[updateEventPrivate] Event {} state set to CANCELED", eventId);
+                }
+                case SEND_TO_REVIEW -> {
+                    event.setState(State.PENDING);
+                    log.info("[updateEventPrivate] Event {} state set to PENDING", eventId);
+                }
+                default -> {
+                    log.warn("[updateEventPrivate] Invalid state action {} for event {}",
+                            updateDto.getStateAction(), eventId);
+                    throw new ConflictException("Invalid state action for private update.");
+                }
             }
         }
 
+        Category category = null;
         if (updateDto.getCategory() != null) {
             category = findCategoryOrThrow(updateDto.getCategory());
+            log.info("[updateEventPrivate] Event {} category updated to {}", eventId, category.getId());
         }
 
         eventMapper.updateEvent(event, updateDto, category);
         eventRepository.save(event);
+
+        log.info("[updateEventPrivate] Event {} successfully updated by user {}", eventId, userId);
         return eventMapper.mapToFullDto(event);
     }
 
     @Override
     public List<ParticipationRequestDto> getUserEventRequestsPrivate(Long userId, Long eventId) {
+        log.info("[getUserEventRequestsPrivate] User {} requests participant list for event {}", userId, eventId);
         User user = findUserOrThrow(userId);
         Event event = findEventOrThrow(eventId);
 
         if (!event.getInitiator().equals(user)) {
+            log.warn("[getUserEventRequestsPrivate] User {} is not the initiator of event {}", user, event);
             throw new ValidationException("User is not the initiator of the event.");
         }
 
         List<ParticipationRequest> requests = requestRepository.findAllByEventId(eventId);
+        log.info("[getUserEventRequestsPrivate] Found {} requests for event {}", requests.size(), eventId);
 
         return requests.stream().map(requestMapper::toDto).toList();
     }
@@ -137,11 +162,14 @@ public class EventServiceImpl implements EventService {
     @Transactional
     public EventRequestStatusUpdateResult updateEventRequestsPrivate(Long userId, Long eventId,
                                                                      EventRequestStatusUpdateRequest dto) {
+        log.info("[updateEventRequestsPrivate] User {} attempts to update requests for event {} with status {}",
+                userId, eventId, dto.getStatus());
         User user = findUserOrThrow(userId);
         Event event = findEventOrThrow(eventId);
 
 
         if (!event.getInitiator().equals(user)) {
+            log.warn("[updateEventRequestsPrivate] User {} is not the initiator of event {}", userId, eventId);
             throw new ValidationException("Only the event initiator can update requests.");
         }
 
@@ -181,6 +209,9 @@ public class EventServiceImpl implements EventService {
                 .map(requestMapper::toDto)
                 .toList();
 
+        log.info("[updateEventRequestsPrivate] Confirmed: {}, Rejected: {}",
+                confirmed.size(), rejected.size());
+
         return EventRequestStatusUpdateResult.builder()
                 .confirmedRequests(confirmed)
                 .rejectedRequests(rejected).build();
@@ -194,6 +225,8 @@ public class EventServiceImpl implements EventService {
                                              LocalDateTime rangeEnd,
                                              Integer from,
                                              Integer size) {
+        log.info("[getEventsAdmin] Filter by users={}, states={}, categories={}, rangeStart={}, rangeEnd={}, from={}, size={}",
+                users, states, categories, rangeStart, rangeEnd, from, size);
         Specification<Event> specification = EventSpecification
                 .adminFilterBuild(users, states, categories, rangeStart, rangeEnd);
 
@@ -201,6 +234,7 @@ public class EventServiceImpl implements EventService {
 
         List<Event> events = eventRepository.findAll(specification, pageable).getContent();
 
+        log.info("[getEventsAdmin] Found {} events", events.size());
         return events.stream()
                 .map(eventMapper::mapToFullDto)
                 .toList();
@@ -209,7 +243,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventFullDto updateEventAdmin(Long eventId, UpdateEventAdminRequest dto) {
-        Category category;
+        log.info("[updateEventAdmin] Updating event {} with data: {}", eventId, dto);
 
         if (dto.getEventDate() != null) {
             checkEventDate(dto.getEventDate());
@@ -222,21 +256,27 @@ public class EventServiceImpl implements EventService {
                 case PUBLISH_EVENT -> {
                     event.setState(State.PUBLISHED);
                     event.setPublishedOn(LocalDateTime.now());
+                    log.info("Event {} published at {}", eventId, event.getPublishedOn());
                 }
-                case REJECT_EVENT -> event.setState(State.REJECTED);
+                case REJECT_EVENT -> {
+                    event.setState(State.REJECTED);
+                    log.info("Event {} rejected", eventId);
+                }
                 default -> throw new ValidationException("Cannot publish the event because " +
                         "it's not in the right state: " + event.getState());
             }
         }
 
         if (dto.getCategory() != null) {
-            category = findCategoryOrThrow(dto.getCategory());
+            Category category = findCategoryOrThrow(dto.getCategory());
             event.setCategory(category);
+            log.info("Event {} category updated to {}", eventId, category.getName());
         }
 
         eventMapper.updateEventAdmin(event, dto);
         locationRepository.save(event.getLocation());
         eventRepository.save(event);
+        log.info("Event {} successfully updated", eventId);
         return eventMapper.mapToFullDto(event);
     }
 
@@ -244,8 +284,11 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> getEventsPublic(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
                                                LocalDateTime rangeEnd, Boolean onlyAvailable, String sort, Integer from,
                                                Integer size, HttpServletRequest httpServletRequest) {
+        log.info("[getEventsPublic] Request received with params: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort='{}', from={}, size={}",
+                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
         if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
+            log.warn("[getEventsPublic] Validation failed: rangeStart {} is after rangeEnd {}", rangeStart, rangeEnd);
             throw new ValidationException("Range start can't be after range end.");
         }
 
@@ -255,9 +298,11 @@ public class EventServiceImpl implements EventService {
         Sort sorting = sorting(sort);
 
         hit(httpServletRequest);
+        log.info("[getEventsPublic] Recorded hit for request URI: {}", httpServletRequest.getRequestURI());
 
         Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size, sorting);
         List<Event> events = eventRepository.findAll(specification, pageable).getContent();
+        log.info("[getEventsPublic] Retrieved {} events from repository", events.size());
 
         return events.stream()
                 .map(eventMapper::mapToShortDto)
@@ -266,10 +311,12 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getEventByIdPublic(Long eventId, HttpServletRequest httpServletRequest) {
+        log.info("[getEventByIdPublic] Fetching event with id {}", eventId);
         Event event = eventRepository.findById(eventId).filter(e -> e.getState().equals(State.PUBLISHED))
                 .orElseThrow(() -> new NotFoundException(Event.class, eventId));
 
         hit(httpServletRequest);
+        log.info("[getEventByIdPublic] Recorded hit for request URI: {}", httpServletRequest.getRequestURI());
 
         try {
             Thread.sleep(500);
@@ -283,6 +330,8 @@ public class EventServiceImpl implements EventService {
 
         Long views = stats.isEmpty() ? 0L : stats.getFirst().getHits();
         event.setViews(views);
+        log.info("[getEventByIdPublic] Updated event views: {}", views);
+
 
         return eventMapper.mapToFullDto(event);
     }
@@ -311,6 +360,7 @@ public class EventServiceImpl implements EventService {
         String string = date.replace('T', ' ');
         if (LocalDateTime.parse(string, FORMATTER)
                 .isBefore(LocalDateTime.now().plusHours(2))) {
+            log.warn("[checkEventDate] Validation failed: eventDateTime {} is less than 2 hours from now", string);
             throw new ValidationException("The event date and time must be at least two hours in the future.");
         }
     }
@@ -332,16 +382,19 @@ public class EventServiceImpl implements EventService {
 
     private void checkEventStatePrivate(State state) {
         if (state.equals(State.PUBLISHED)) {
+            log.warn("[checkEventStatePrivate] Conflict: event state is PUBLISHED, update forbidden");
             throw new ConflictException("Only events in the CANCELLED or PENDING state can be updated.");
         }
     }
 
     private void checkEventStateAdmin(State currentState, StateAction action) {
         if (action == StateAction.PUBLISH_EVENT && currentState != State.PENDING) {
+            log.warn("[checkEventStateAdmin] Conflict: trying to publish event in state {}", currentState);
             throw new ConflictException("Cannot publish the event because it's not in the right state: " + currentState);
         }
 
         if (action == StateAction.REJECT_EVENT && currentState == State.PUBLISHED) {
+            log.warn("[checkEventStateAdmin] Conflict: trying to reject already published event");
             throw new ConflictException("Cannot reject the event because it has already been published.");
         }
     }
