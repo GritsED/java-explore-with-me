@@ -2,15 +2,14 @@ package ru.practicum.controller.admin;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.dto.request.EventSearchParamsAdmin;
 import ru.practicum.dto.request.UpdateEventAdminRequest;
 import ru.practicum.dto.response.EventFullDto;
 import ru.practicum.service.interfaces.EventService;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Validated
@@ -22,18 +21,10 @@ public class AdminEventController {
 
     @GetMapping
     @ResponseStatus(value = HttpStatus.OK)
-    public List<EventFullDto> getEvents(@RequestParam(required = false) List<Long> users,
-                                        @RequestParam(required = false) List<String> states,
-                                        @RequestParam(required = false) List<Long> categories,
-                                        @RequestParam(required = false)
-                                        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-                                        LocalDateTime rangeStart,
-                                        @RequestParam(required = false)
-                                        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-                                        LocalDateTime rangeEnd,
+    public List<EventFullDto> getEvents(@ModelAttribute EventSearchParamsAdmin params,
                                         @RequestParam(defaultValue = "0") Integer from,
                                         @RequestParam(defaultValue = "10") Integer size) {
-        return eventService.getEventsAdmin(users, states, categories, rangeStart, rangeEnd, from, size);
+        return eventService.getEventsAdmin(params, from, size);
     }
 
     @PatchMapping("{eventId}")

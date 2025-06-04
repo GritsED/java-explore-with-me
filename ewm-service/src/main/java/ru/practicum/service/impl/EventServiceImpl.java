@@ -33,6 +33,9 @@ import ru.practicum.stats.StatsClient;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -56,8 +59,15 @@ public class EventServiceImpl implements EventService {
 
         List<Event> events = eventRepository.findAllByInitiatorId(userId, pageable);
 
+
+        LocalDateTime rangeStart = events.stream()
+                .map(Event::getPublishedOn)
+                .filter(Objects::nonNull)
+                .min(LocalDateTime::compareTo)
+                .orElse(LocalDateTime.now().minusYears(1));
+
         log.info("[getUserEventsPrivate] Retrieved {} events for userId={}", events.size(), userId);
-        return eventMapper.mapToShortDto(events);
+        return getEventShortDtoWithVies(events, rangeStart, LocalDateTime.now());
     }
 
     @Override
@@ -89,7 +99,8 @@ public class EventServiceImpl implements EventService {
         log.info("[getEventByUserPrivate] User {} requests event with id {}", userId, eventId);
         Event event = eventRepository.findByInitiatorIdAndId(userId, eventId)
                 .orElseThrow(() -> new NotFoundException(Event.class, eventId));
-
+        Long views = getEventViews(event);
+        event.setViews(views);
         return eventMapper.mapToFullDto(event);
     }
 
@@ -218,24 +229,24 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventFullDto> getEventsAdmin(List<Long> users,
-                                             List<String> states,
-                                             List<Long> categories,
-                                             LocalDateTime rangeStart,
-                                             LocalDateTime rangeEnd,
+    public List<EventFullDto> getEventsAdmin(EventSearchParamsAdmin params,
                                              Integer from,
                                              Integer size) {
-        log.info("[getEventsAdmin] Filter by users={}, states={}, categories={}, rangeStart={}, rangeEnd={}, from={}, size={}",
-                users, states, categories, rangeStart, rangeEnd, from, size);
+        log.info("[getEventsAdmin] Filter by params {}", params);
         Specification<Event> specification = EventSpecification
-                .adminFilterBuild(users, states, categories, rangeStart, rangeEnd);
+                .adminFilterBuild(params);
 
         Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size);
 
         List<Event> events = eventRepository.findAll(specification, pageable).getContent();
 
+        LocalDateTime rangeStart = params.getRangeStart();
+        LocalDateTime rangeEnd = params.getRangeEnd();
+        Map<Long, Long> eventsViews = getEventsViews(events, rangeStart, rangeEnd);
+
         log.info("[getEventsAdmin] Found {} events", events.size());
         return events.stream()
+                .peek(event -> eventsViews.getOrDefault(event.getId(), 0L))
                 .map(eventMapper::mapToFullDto)
                 .toList();
     }
@@ -281,11 +292,14 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDto> getEventsPublic(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
-                                               LocalDateTime rangeEnd, Boolean onlyAvailable, String sort, Integer from,
+    public List<EventShortDto> getEventsPublic(EventSearchParamsPublic params, Integer from,
                                                Integer size, HttpServletRequest httpServletRequest) {
-        log.info("[getEventsPublic] Request received with params: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort='{}', from={}, size={}",
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+        log.info("[getEventsPublic] Request received with params {}, from={}, size={}",
+                params, from, size);
+
+        LocalDateTime rangeStart = params.getRangeStart();
+        LocalDateTime rangeEnd = params.getRangeEnd();
+        String sort = params.getSortOpt();
 
         if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
             log.warn("[getEventsPublic] Validation failed: rangeStart {} is after rangeEnd {}", rangeStart, rangeEnd);
@@ -293,7 +307,7 @@ public class EventServiceImpl implements EventService {
         }
 
         Specification<Event> specification = EventSpecification
-                .publicFilterBuild(text, categories, paid, rangeStart, rangeEnd, onlyAvailable);
+                .publicFilterBuild(params);
 
         Sort sorting = sorting(sort);
 
@@ -302,11 +316,9 @@ public class EventServiceImpl implements EventService {
 
         Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size, sorting);
         List<Event> events = eventRepository.findAll(specification, pageable).getContent();
-        log.info("[getEventsPublic] Retrieved {} events from repository", events.size());
 
-        return events.stream()
-                .map(eventMapper::mapToShortDto)
-                .toList();
+        log.info("[getEventsPublic] Retrieved {} events from repository", events.size());
+        return getEventShortDtoWithVies(events, rangeStart, rangeEnd);
     }
 
     @Override
@@ -318,22 +330,52 @@ public class EventServiceImpl implements EventService {
         hit(httpServletRequest);
         log.info("[getEventByIdPublic] Recorded hit for request URI: {}", httpServletRequest.getRequestURI());
 
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
-
-        List<EndpointStatsResponse> stats = statsClient.findStats(event.getPublishedOn(), LocalDateTime.now(),
-                List.of("/events/" + eventId), true);
-
-        Long views = stats.isEmpty() ? 0L : stats.getFirst().getHits();
+        Long views = getEventViews(event);
         event.setViews(views);
         log.info("[getEventByIdPublic] Updated event views: {}", views);
 
-
         return eventMapper.mapToFullDto(event);
+    }
+
+    private List<EventShortDto> getEventShortDtoWithVies(List<Event> events, LocalDateTime rangeStart,
+                                                         LocalDateTime rangeEnd) {
+        Map<Long, Long> viewsMap = getEventsViews(events, rangeStart, rangeEnd);
+
+        return events.stream()
+                .peek(event -> event.setViews(viewsMap.getOrDefault(event.getId(), 0L)))
+                .map(eventMapper::mapToShortDto)
+                .toList();
+    }
+
+    private Map<Long, Long> getEventsViews(List<Event> events, LocalDateTime rangeStart, LocalDateTime rangeEnd) {
+        if (rangeStart == null) {
+            rangeStart = LocalDateTime.now();
+        }
+
+        if (rangeEnd == null) {
+            rangeEnd = LocalDateTime.now().plusYears(5);
+        }
+        List<String> uris = events.stream().map(event -> "/event/" + event.getId()).toList();
+
+        List<EndpointStatsResponse> stats = statsClient.findStats(rangeStart, rangeEnd, uris, true);
+
+        return stats.stream()
+                .collect(Collectors.toMap(stat -> Long.parseLong(stat.getUri()
+                                .substring(stat.getUri().lastIndexOf("/") + 1)),
+                        EndpointStatsResponse::getHits));
+    }
+
+    private Long getEventViews(Event event) {
+        LocalDateTime rangeStart = event.getPublishedOn();
+
+        if (rangeStart == null) {
+            rangeStart = LocalDateTime.now();
+        }
+
+        List<EndpointStatsResponse> stats = statsClient.findStats(rangeStart, LocalDateTime.now(),
+                List.of("/events/" + event.getId()), true);
+
+        return stats.isEmpty() ? 0L : stats.getFirst().getHits();
     }
 
     private void hit(HttpServletRequest httpServletRequest) {

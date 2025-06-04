@@ -2,6 +2,8 @@ package ru.practicum.repository.specification;
 
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
+import ru.practicum.dto.request.EventSearchParamsAdmin;
+import ru.practicum.dto.request.EventSearchParamsPublic;
 import ru.practicum.model.Event;
 import ru.practicum.model.enums.State;
 
@@ -10,11 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EventSpecification {
-    public static Specification<Event> adminFilterBuild(List<Long> users,
-                                                        List<String> states,
-                                                        List<Long> categories,
-                                                        LocalDateTime rangeStart,
-                                                        LocalDateTime rangeEnd) {
+    public static Specification<Event> adminFilterBuild(EventSearchParamsAdmin params) {
+        List<Long> users = params.getUsers();
+        List<String> states = params.getStates();
+        List<Long> categories = params.getCategories();
+        LocalDateTime rangeStart = params.getRangeStart();
+        LocalDateTime rangeEnd = params.getRangeEnd();
+
+
         return ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -41,9 +46,14 @@ public class EventSpecification {
         });
     }
 
-    public static Specification<Event> publicFilterBuild(String text, List<Long> categories,
-                                                         Boolean paid, LocalDateTime rangeStart,
-                                                         LocalDateTime rangeEnd, Boolean onlyAvailable) {
+    public static Specification<Event> publicFilterBuild(EventSearchParamsPublic params) {
+        String text = params.getText();
+        List<Long> categories = params.getCategories();
+        Boolean paid = params.getPaid();
+        LocalDateTime rangeStart = params.getRangeStart();
+        LocalDateTime rangeEnd = params.getRangeEnd();
+        Boolean onlyAvailable = params.getOnlyAvailable();
+
         return ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -66,6 +76,8 @@ public class EventSpecification {
 
             if (rangeStart != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("eventDate"), rangeStart));
+            } else {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("eventDate"), LocalDateTime.now()));
             }
 
             if (rangeEnd != null) {

@@ -17,6 +17,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Event {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
     @Column(name = "annotation", nullable = false)
     String annotation;
     @ManyToOne
@@ -32,9 +35,6 @@ public class Event {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime eventDate;
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
     @ManyToOne
     @JoinColumn(name = "initiator_id", nullable = false)
     User initiator;
