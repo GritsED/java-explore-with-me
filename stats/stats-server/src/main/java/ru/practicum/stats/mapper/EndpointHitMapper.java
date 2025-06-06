@@ -11,9 +11,11 @@ import java.time.format.DateTimeFormatter;
 @Mapper
 public interface EndpointHitMapper {
     @Mapping(source = "timestamp", target = "timestamp")
+    @Mapping(target = "id", ignore = true)
     EndpointHit toEntity(EndpointHitRequest dto);
 
     default LocalDateTime map(String value) {
-        return LocalDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String string = value.replace('T', ' ');
+        return LocalDateTime.parse(string, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 }
