@@ -37,7 +37,7 @@ public class CommentServiceImpl implements CommentService {
     private final EventRepository eventRepository;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public CommentDto createCommentPrivate(Long userId, Long eventId, NewCommentDto newComment) {
         Result result = validateAndLoadUserAndEvent(userId, eventId);
 
