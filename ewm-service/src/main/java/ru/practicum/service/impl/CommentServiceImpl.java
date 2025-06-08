@@ -37,7 +37,7 @@ public class CommentServiceImpl implements CommentService {
     private final EventRepository eventRepository;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public CommentDto createCommentPrivate(Long userId, Long eventId, NewCommentDto newComment) {
         Result result = validateAndLoadUserAndEvent(userId, eventId);
 
@@ -106,6 +106,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Transactional
     public void deleteCommentAdmin(Long commentId) {
         Comment comment = getCommentOrThrow(commentId);
 

@@ -378,7 +378,8 @@ public class EventServiceImpl implements EventService {
             rangeStart = LocalDateTime.now().minusYears(5);
         }
 
-        List<EndpointStatsResponse> stats = statsClient.findStats(rangeStart, LocalDateTime.now(),
+        List<EndpointStatsResponse> stats = statsClient.findStats(rangeStart.withNano(0),
+                                                                  LocalDateTime.now().withNano(0),
                                                                   List.of("/events/" + event.getId()), true);
 
         return stats.isEmpty() ? 0L : stats.getFirst().getHits();
