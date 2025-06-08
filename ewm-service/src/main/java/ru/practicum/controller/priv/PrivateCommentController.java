@@ -23,7 +23,7 @@ public class PrivateCommentController {
     public CommentDto create(@PathVariable Long userId,
                              @PathVariable Long eventId,
                              @RequestBody @Valid NewCommentDto newCommentDto) {
-        return commentService.createComment(userId, eventId, newCommentDto);
+        return commentService.createCommentPrivate(userId, eventId, newCommentDto);
     }
 
     @PatchMapping("/events/{eventId}/comments/{commentId}")
@@ -32,7 +32,7 @@ public class PrivateCommentController {
                                     @PathVariable Long eventId,
                                     @PathVariable Long commentId,
                                     @RequestBody @Valid NewCommentDto newCommentDto) {
-        return commentService.updateComment(userId, eventId, commentId, newCommentDto);
+        return commentService.updateCommentPrivate(userId, eventId, commentId, newCommentDto);
     }
 
     @DeleteMapping("/events/{eventId}/comments/{commentId}")
@@ -40,13 +40,13 @@ public class PrivateCommentController {
     public void deleteComment(@PathVariable Long userId,
                               @PathVariable Long eventId,
                               @PathVariable Long commentId) {
-        commentService.deleteComment(userId, eventId, commentId);
+        commentService.deleteCommentPrivate(userId, eventId, commentId);
     }
 
     @GetMapping("/comments")
     public List<CommentDto> getComments(@PathVariable Long userId,
                                         @RequestParam(defaultValue = "0") Integer from,
                                         @RequestParam(defaultValue = "10") Integer size) {
-        return commentService.getAllUserComments(userId, from, size);
+        return commentService.getAllUserCommentsPrivate(userId, from, size);
     }
 }

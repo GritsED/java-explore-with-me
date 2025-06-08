@@ -10,7 +10,6 @@ import ru.practicum.model.Comment;
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {UserMapper.class, EventMapper.class})
 public interface CommentMapper {
     @Mapping(target = "createdAt", expression = "java(java.time.LocalDateTime.now())")
-    @Mapping(target = "pinned", constant = "false")
     Comment toEntity(NewCommentDto newCommentDto);
 
     @Mapping(source = "comment.author", target = "author")

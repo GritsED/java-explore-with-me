@@ -76,7 +76,7 @@ public class RequestServiceImpl implements RequestService {
                 .event(event)
                 .requester(requester)
                 .status(event.getParticipantLimit() != 0 && event.getRequestModeration() ?
-                        RequestStatus.PENDING : RequestStatus.CONFIRMED)
+                                RequestStatus.PENDING : RequestStatus.CONFIRMED)
                 .build();
 
         if (request.getStatus() == RequestStatus.CONFIRMED) {
@@ -94,7 +94,7 @@ public class RequestServiceImpl implements RequestService {
     @Transactional
     public ParticipationRequestDto cancelUserRequestPrivate(Long userId, Long requestId) {
         log.info("[cancelUserRequestPrivate] User {} requests cancellation of participation request {}",
-                userId, requestId);
+                 userId, requestId);
         User requester = getUserOrThrow(userId);
         ParticipationRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException(ParticipationRequest.class, requestId));

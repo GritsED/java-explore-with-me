@@ -3,8 +3,11 @@ package ru.practicum.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.dto.request.CommentSearchParamsAdmin;
 import ru.practicum.dto.request.NewCommentDto;
 import ru.practicum.dto.response.CommentDto;
 import ru.practicum.exception.ConflictException;
@@ -13,10 +16,12 @@ import ru.practicum.mapper.CommentMapper;
 import ru.practicum.model.Comment;
 import ru.practicum.model.Event;
 import ru.practicum.model.User;
+import ru.practicum.model.enums.SortCommentOpt;
 import ru.practicum.model.enums.State;
 import ru.practicum.repository.CommentRepository;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.UserRepository;
+import ru.practicum.repository.specification.CommentSpecification;
 import ru.practicum.service.interfaces.CommentService;
 
 import java.time.LocalDateTime;
@@ -33,7 +38,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentDto createComment(Long userId, Long eventId, NewCommentDto newComment) {
+    public CommentDto createCommentPrivate(Long userId, Long eventId, NewCommentDto newComment) {
         Result result = validateAndLoadUserAndEvent(userId, eventId);
 
         Comment comment = commentMapper.toEntity(newComment);
@@ -45,7 +50,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentDto updateComment(Long userId, Long eventId, Long commentId, NewCommentDto updatedComment) {
+    public CommentDto updateCommentPrivate(Long userId, Long eventId, Long commentId, NewCommentDto updatedComment) {
         validateAndLoadUserAndEvent(userId, eventId);
 
         Comment comment = getCommentOrThrow(commentId);
@@ -62,7 +67,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public void deleteComment(Long userId, Long eventId, Long commentId) {
+    public void deleteCommentPrivate(Long userId, Long eventId, Long commentId) {
         validateAndLoadUserAndEvent(userId, eventId);
         Comment comment = getCommentOrThrow(commentId);
         checkCommentAuthor(userId, comment);
@@ -71,13 +76,50 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public List<CommentDto> getAllUserComments(Long userId, Integer from, Integer size) {
+    public List<CommentDto> getAllUserCommentsPrivate(Long userId, Integer from, Integer size) {
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException(User.class, userId));
         Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size);
 
         List<Comment> comments = commentRepository.findAllByAuthorId(userId, pageable).getContent();
 
         return comments.stream().map(commentMapper::toDto).toList();
+    }
+
+    @Override
+    public CommentDto getCommentPublic(Long commentId) {
+        Comment comment = getCommentOrThrow(commentId);
+        return commentMapper.toDto(comment);
+    }
+
+    @Override
+    public List<CommentDto> getAllUserCommentsAdmin(CommentSearchParamsAdmin params, Integer from, Integer size) {
+        Specification<Comment> commentSpecification = CommentSpecification.adminFilterBuild(params);
+        SortCommentOpt sort = params.getSort();
+
+        Sort sorting = sorting(sort);
+        Pageable pageable = PageRequest.of(from > 0 ? from / size : 0, size, sorting);
+
+        List<Comment> comments = commentRepository.findAll(commentSpecification, pageable).getContent();
+        return comments.stream()
+                .map(commentMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    public void deleteCommentAdmin(Long commentId) {
+        Comment comment = getCommentOrThrow(commentId);
+
+        commentRepository.delete(comment);
+    }
+
+    private Sort sorting(SortCommentOpt sort) {
+        if (sort == null) {
+            return Sort.unsorted();
+        }
+        return switch (sort) {
+            case CREATED_ASC -> Sort.by(Sort.Direction.ASC, "createdAt");
+            case CREATED_DESC -> Sort.by(Sort.Direction.DESC, "createdAt");
+        };
     }
 
     private void checkCommentAuthor(Long userId, Comment comment) {

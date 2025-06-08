@@ -18,35 +18,35 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handleNotFound(final NotFoundException e) {
         return new ApiError(e.getMessage(), "The required object was not found.",
-                HttpStatus.NOT_FOUND.name(), LocalDateTime.now());
+                            HttpStatus.NOT_FOUND.name(), LocalDateTime.now());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handleConstraintViolation(final ConstraintViolationException e) {
         return new ApiError(e.getMessage(), "For the requested operation the conditions are not met.",
-                HttpStatus.CONFLICT.name(), LocalDateTime.now());
+                            HttpStatus.CONFLICT.name(), LocalDateTime.now());
     }
 
     @ExceptionHandler(ConflictException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handleConflict(final ConflictException e) {
         return new ApiError(e.getMessage(), "Integrity constraint has been violated.",
-                HttpStatus.CONFLICT.name(), LocalDateTime.now());
+                            HttpStatus.CONFLICT.name(), LocalDateTime.now());
     }
 
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleValidation(final ValidationException e) {
         return new ApiError(e.getMessage(), "For the requested operation the conditions are not met.",
-                "BAD_REQUEST", LocalDateTime.now());
+                            "BAD_REQUEST", LocalDateTime.now());
     }
 
     @ExceptionHandler(NumberFormatException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleValidate(final NumberFormatException e) {
         return new ApiError(e.getMessage(), "Incorrectly made request.",
-                HttpStatus.BAD_REQUEST.name(), LocalDateTime.now());
+                            HttpStatus.BAD_REQUEST.name(), LocalDateTime.now());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -63,20 +63,20 @@ public class ErrorHandler {
         }
 
         return new ApiError(message, "Incorrectly made request.",
-                HttpStatus.BAD_REQUEST.name(), LocalDateTime.now());
+                            HttpStatus.BAD_REQUEST.name(), LocalDateTime.now());
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleValidate(final MissingServletRequestParameterException e) {
         return new ApiError(e.getMessage(), "Incorrectly made request.",
-                HttpStatus.BAD_REQUEST.name(), LocalDateTime.now());
+                            HttpStatus.BAD_REQUEST.name(), LocalDateTime.now());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleThrowable(final Throwable e) {
         return new ApiError(e.getMessage(), "An unexpected error occurred.",
-                HttpStatus.INTERNAL_SERVER_ERROR.name(), LocalDateTime.now());
+                            HttpStatus.INTERNAL_SERVER_ERROR.name(), LocalDateTime.now());
     }
 }

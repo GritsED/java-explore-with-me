@@ -61,7 +61,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional
     public CompilationDto updateCompAdmin(Long id, UpdateCompilationRequest updateCompilationRequest) {
         log.info("[updateCompAdmin] Admin attempts to update compilation with id {} using data: {}",
-                id, updateCompilationRequest);
+                 id, updateCompilationRequest);
         Compilation compilation = getCompOrThrow(id);
 
         List<Long> events = updateCompilationRequest.getEvents();
