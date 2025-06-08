@@ -133,7 +133,7 @@ public class EventServiceImpl implements EventService {
                 }
                 default -> {
                     log.warn("[updateEventPrivate] Invalid state action {} for event {}",
-                            updateDto.getStateAction(), eventId);
+                             updateDto.getStateAction(), eventId);
                     throw new ConflictException("Invalid state action for private update.");
                 }
             }
@@ -174,7 +174,7 @@ public class EventServiceImpl implements EventService {
     public EventRequestStatusUpdateResult updateEventRequestsPrivate(Long userId, Long eventId,
                                                                      EventRequestStatusUpdateRequest dto) {
         log.info("[updateEventRequestsPrivate] User {} attempts to update requests for event {} with status {}",
-                userId, eventId, dto.getStatus());
+                 userId, eventId, dto.getStatus());
         User user = findUserOrThrow(userId);
         Event event = findEventOrThrow(eventId);
 
@@ -221,7 +221,7 @@ public class EventServiceImpl implements EventService {
                 .toList();
 
         log.info("[updateEventRequestsPrivate] Confirmed: {}, Rejected: {}",
-                confirmed.size(), rejected.size());
+                 confirmed.size(), rejected.size());
 
         return EventRequestStatusUpdateResult.builder()
                 .confirmedRequests(confirmed)
@@ -246,8 +246,11 @@ public class EventServiceImpl implements EventService {
 
         log.info("[getEventsAdmin] Found {} events", events.size());
         return events.stream()
-                .peek(event -> eventsViews.getOrDefault(event.getId(), 0L))
-                .map(eventMapper::mapToFullDto)
+                .map(event -> {
+                    EventFullDto dto = eventMapper.mapToFullDto(event);
+                    dto.setViews(Math.toIntExact(eventsViews.getOrDefault(event.getId(), 0L)));
+                    return dto;
+                })
                 .toList();
     }
 
@@ -274,7 +277,7 @@ public class EventServiceImpl implements EventService {
                     log.info("Event {} rejected", eventId);
                 }
                 default -> throw new ValidationException("Cannot publish the event because " +
-                        "it's not in the right state: " + event.getState());
+                                                                 "it's not in the right state: " + event.getState());
             }
         }
 
@@ -295,7 +298,7 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> getEventsPublic(EventSearchParamsPublic params, Integer from,
                                                Integer size, HttpServletRequest httpServletRequest) {
         log.info("[getEventsPublic] Request received with params {}, from={}, size={}",
-                params, from, size);
+                 params, from, size);
 
         LocalDateTime rangeStart = params.getRangeStart();
         LocalDateTime rangeEnd = params.getRangeEnd();
@@ -342,38 +345,41 @@ public class EventServiceImpl implements EventService {
         Map<Long, Long> viewsMap = getEventsViews(events, rangeStart, rangeEnd);
 
         return events.stream()
-                .peek(event -> event.setViews(viewsMap.getOrDefault(event.getId(), 0L)))
-                .map(eventMapper::mapToShortDto)
+                .map(event -> {
+                    EventShortDto dto = eventMapper.mapToShortDto(event);
+                    dto.setViews(Math.toIntExact(viewsMap.getOrDefault(event.getId(), 0L)));
+                    return dto;
+                })
                 .toList();
     }
 
     private Map<Long, Long> getEventsViews(List<Event> events, LocalDateTime rangeStart, LocalDateTime rangeEnd) {
         if (rangeStart == null) {
-            rangeStart = LocalDateTime.now();
+            rangeStart = LocalDateTime.now().minusYears(5);
         }
 
         if (rangeEnd == null) {
             rangeEnd = LocalDateTime.now().plusYears(5);
         }
-        List<String> uris = events.stream().map(event -> "/event/" + event.getId()).toList();
+        List<String> uris = events.stream().map(event -> "/events/" + event.getId()).toList();
 
         List<EndpointStatsResponse> stats = statsClient.findStats(rangeStart, rangeEnd, uris, true);
 
         return stats.stream()
                 .collect(Collectors.toMap(stat -> Long.parseLong(stat.getUri()
-                                .substring(stat.getUri().lastIndexOf("/") + 1)),
-                        EndpointStatsResponse::getHits));
+                                                                         .substring(stat.getUri().lastIndexOf("/") + 1)),
+                                          EndpointStatsResponse::getHits));
     }
 
     private Long getEventViews(Event event) {
         LocalDateTime rangeStart = event.getPublishedOn();
 
         if (rangeStart == null) {
-            rangeStart = LocalDateTime.now();
+            rangeStart = LocalDateTime.now().minusYears(5);
         }
 
         List<EndpointStatsResponse> stats = statsClient.findStats(rangeStart, LocalDateTime.now(),
-                List.of("/events/" + event.getId()), true);
+                                                                  List.of("/events/" + event.getId()), true);
 
         return stats.isEmpty() ? 0L : stats.getFirst().getHits();
     }

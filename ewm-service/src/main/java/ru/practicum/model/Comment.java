@@ -19,6 +19,7 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     String text;
+    @Column(name = "created")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime createdAt;
     @ManyToOne
@@ -27,5 +28,4 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "event_id")
     Event event;
-    Boolean pinned;
 }
