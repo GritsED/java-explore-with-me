@@ -44,6 +44,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = commentMapper.toEntity(newComment);
         comment.setAuthor(result.user());
         comment.setEvent(result.event());
+        comment.setCreatedAt(LocalDateTime.now());
 
         return commentMapper.toDto(commentRepository.save(comment));
     }
