@@ -363,7 +363,8 @@ public class EventServiceImpl implements EventService {
         }
         List<String> uris = events.stream().map(event -> "/events/" + event.getId()).toList();
 
-        List<EndpointStatsResponse> stats = statsClient.findStats(rangeStart, rangeEnd, uris, true);
+        List<EndpointStatsResponse> stats = statsClient.findStats(rangeStart.withNano(0),
+                                                                  rangeEnd.withNano(0), uris, true);
 
         return stats.stream()
                 .collect(Collectors.toMap(stat -> Long.parseLong(stat.getUri()
@@ -382,7 +383,7 @@ public class EventServiceImpl implements EventService {
                                                                   LocalDateTime.now().withNano(0),
                                                                   List.of("/events/" + event.getId()), true);
 
-        return stats.isEmpty() ? 0L : stats.getFirst().getHits();
+        return stats.isEmpty() ? 0L : stats.get(0).getHits();
     }
 
     private void hit(HttpServletRequest httpServletRequest) {

@@ -26,9 +26,6 @@ public class StatsServiceImpl implements StatsService {
     @Override
     public List<EndpointStatsResponse> findStats(LocalDateTime start, LocalDateTime end,
                                                  List<String> uris, Boolean unique) {
-
-        end = end.plusSeconds(1);
-
         if (start.isAfter(end)) {
             throw new ValidationException("Start date cannot be after end date");
         }
